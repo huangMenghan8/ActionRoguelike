@@ -25,11 +25,23 @@ protected:
 	TSubclassOf<AActor> ProjectileClass;
 
 	UPROPERTY(EditAnywhere, Category = "Attack")
+	TSubclassOf<AActor> BlackHoleProjectileClass;
+
+	UPROPERTY(EditAnywhere, Category = "Attack")
+	TSubclassOf<AActor> DashProjectileClass;
+	
+
+	UPROPERTY(EditAnywhere, Category = "Attack")
 	UAnimMontage* AttackAnim;
+
+	UPROPERTY(EditAnywhere, Category = "Attack")
+	float AttackAnimDelay;
 
 	FTimerHandle TimerHandle_PrimaryAttack;
 
 protected:
+
+	
 
 	UPROPERTY(VisibleAnywhere)
 	USpringArmComponent* SpringArmComp;
@@ -46,11 +58,19 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+
+protected:
+
 	void MoveForward(float Value);
 	void MoveRight(float Value);
 	void PrimaryAttack();
 	void PrimaryInteract();
 	void PrimaryAttack_TimeElaps();
+	void BlackHoleAttack();
+	void BlackHoleAttack_TimeElaps();
+	void Dash();
+	void Dash_TimeElaps();
+	void SpawnProjectile(TSubclassOf<AActor> ClassToSpawn);
 
 public:	
 	// Called every frame
