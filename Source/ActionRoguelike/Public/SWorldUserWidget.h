@@ -13,5 +13,10 @@ UCLASS()
 class ACTIONROGUELIKE_API USWorldUserWidget : public UUserWidget
 {
 	GENERATED_BODY()
-	
+protected:
+
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	AActor* AttachedActor;
 };

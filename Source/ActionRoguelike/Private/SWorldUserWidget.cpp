@@ -3,3 +3,7 @@
 
 #include "SWorldUserWidget.h"
 
+void USWorldUserWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+
+}
