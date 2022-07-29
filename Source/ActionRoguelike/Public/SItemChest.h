@@ -14,29 +14,22 @@ class ACTIONROGUELIKE_API ASItemChest : public AActor, public ISGameplayInterfac
 {
 	GENERATED_BODY()
 
-	void Interact_Implementation(APawn* InstigatorPawn);
-	
-public:	
-	// Sets default values for this actor's properties
-	ASItemChest();
+public:
 
 	UPROPERTY(EditAnywhere)
 	float TargetPitch;
 
+	void Interact_Implementation(APawn* InstigatorPawn);
+
 protected:
-	//±¦Ïäµ××ù
+
 	UPROPERTY(VisibleAnywhere)
 	UStaticMeshComponent* BaseMesh;
 
-	//±¦Ïä¸Ç
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* LidMesh;
 
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
 
 public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
+	ASItemChest();
 };
