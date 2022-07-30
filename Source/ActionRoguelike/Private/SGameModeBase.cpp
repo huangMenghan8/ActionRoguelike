@@ -2,41 +2,64 @@
 
 
 #include "SGameModeBase.h"
-#include "EnvironmentQuery/EnvQueryTypes.h"
 #include "EnvironmentQuery/EnvQueryManager.h"
+#include "EnvironmentQuery/EnvQueryTypes.h"
 #include "EnvironmentQuery/EnvQueryInstanceBlueprintWrapper.h"
 #include "AI/SAICharacter.h"
 #include "SAttributeComponent.h"
 #include "EngineUtils.h"
 #include "DrawDebugHelpers.h"
 
+
+
+
+
 ASGameModeBase::ASGameModeBase()
 {
 	SpawnTimerInterval = 2.0f;
 }
 
+
 void ASGameModeBase::StartPlay()
 {
 	Super::StartPlay();
 
+	// Continuous timer to spawn in more bots.
+	// Actual amount of bots and whether its allowed to spawn determined by spawn logic later in the chain...
 	GetWorldTimerManager().SetTimer(TimerHandle_SpawnBots, this, &ASGameModeBase::SpawnBotTimerElapsed, SpawnTimerInterval, true);
 }
 
+
+void ASGameModeBase::KillAll()
+{
+	for (TActorIterator<ASAICharacter> It(GetWorld()); It; ++It)
+	{
+		ASAICharacter* Bot = *It;
+
+		USAttributeComponent* AttributeComp = USAttributeComponent::GetAttributes(Bot);
+		if (ensure(AttributeComp) && AttributeComp->IsAlive())
+		{
+			AttributeComp->Kill(this); // @fixme: pass in player? for kill credit
+		}
+	}
+}
+
+
 void ASGameModeBase::SpawnBotTimerElapsed()
 {
-	int32 NrofAliveBots = 0;
-	for (TActorIterator<ASAICharacter> IT(GetWorld()); IT; ++IT)
+	int32 NrOfAliveBots = 0;
+	for (TActorIterator<ASAICharacter> It(GetWorld()); It; ++It)
 	{
-		ASAICharacter* Bot = *IT;
+		ASAICharacter* Bot = *It;
 
-		USAttributeComponent* AttributeCompm = USAttributeComponent::GetAttributes(Bot);
-		if (ensure(AttributeCompm) && AttributeCompm->IsAlive())
+		USAttributeComponent* AttributeComp = USAttributeComponent::GetAttributes(Bot);
+		if (ensure(AttributeComp) && AttributeComp->IsAlive())
 		{
-			NrofAliveBots++;
+			NrOfAliveBots++;
 		}
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Found %i alive bots."), NrofAliveBots);
+	UE_LOG(LogTemp, Log, TEXT("Found %i alive bots."), NrOfAliveBots);
 
 	float MaxBotCount = 10.0f;
 	if (DifficultyCurve)
@@ -44,9 +67,9 @@ void ASGameModeBase::SpawnBotTimerElapsed()
 		MaxBotCount = DifficultyCurve->GetFloatValue(GetWorld()->TimeSeconds);
 	}
 
-	if (NrofAliveBots >= MaxBotCount)
+	if (NrOfAliveBots >= MaxBotCount)
 	{
-		UE_LOG(LogTemp, Log, TEXT("At maximum bot capacity. Skipping bot spawn"));
+		UE_LOG(LogTemp, Log, TEXT("At maximum bot capacity. Skipping bot spawn."));
 		return;
 	}
 
@@ -62,7 +85,7 @@ void ASGameModeBase::OnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryIn
 {
 	if (QueryStatus != EEnvQueryStatus::Success)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Spawn bot Query Failed"));
+		UE_LOG(LogTemp, Warning, TEXT("Spawn bot EQS Query Failed!"));
 		return;
 	}
 
@@ -70,6 +93,8 @@ void ASGameModeBase::OnQueryCompleted(UEnvQueryInstanceBlueprintWrapper* QueryIn
 	if (Locations.IsValidIndex(0))
 	{
 		GetWorld()->SpawnActor<AActor>(MinionClass, Locations[0], FRotator::ZeroRotator);
+
+		// Track all the used spawn locations
 		DrawDebugSphere(GetWorld(), Locations[0], 50.0f, 20, FColor::Blue, false, 60.0f);
 	}
 }

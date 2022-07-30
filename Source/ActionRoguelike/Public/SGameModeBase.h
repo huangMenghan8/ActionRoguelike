@@ -11,6 +11,9 @@ class UEnvQuery;
 class UEnvQueryInstanceBlueprintWrapper;
 class UCurveFloat;
 
+/**
+ * 
+ */
 UCLASS()
 class ACTIONROGUELIKE_API ASGameModeBase : public AGameModeBase
 {
@@ -24,13 +27,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	UEnvQuery* SpawnBotQuery;
 
+	UPROPERTY(EditDefaultsOnly, Category = "AI")
+	UCurveFloat* DifficultyCurve;
+
 	FTimerHandle TimerHandle_SpawnBots;
 
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	float SpawnTimerInterval;
-
-	UPROPERTY(EditDefaultsOnly, Category = "AI")
-	UCurveFloat* DifficultyCurve;
 
 	UFUNCTION()
 	void SpawnBotTimerElapsed();
@@ -44,6 +47,6 @@ public:
 
 	virtual void StartPlay() override;
 
-
-
+	UFUNCTION(Exec)
+	void KillAll();
 };

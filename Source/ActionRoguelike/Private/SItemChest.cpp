@@ -5,9 +5,9 @@
 #include "Components/StaticMeshComponent.h"
 
 
+
 ASItemChest::ASItemChest()
 {
-
 	BaseMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BaseMesh"));
 	RootComponent = BaseMesh;
 

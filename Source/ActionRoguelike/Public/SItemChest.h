@@ -29,7 +29,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UStaticMeshComponent* LidMesh;
 
-
 public:	
+
+	// Sets default values for this actor's properties
 	ASItemChest();
 };
