@@ -9,6 +9,9 @@
 #include "SAttributeComponent.h"
 #include "BrainComponent.h"
 #include "SWorldUserWidget.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "SActionComponent.h"
 
 
 ASAICharacter::ASAICharacter()
@@ -17,9 +20,18 @@ ASAICharacter::ASAICharacter()
 
 	AttributeComp = CreateDefaultSubobject<USAttributeComponent>("AttributeComp");
 
+	ActionComp = CreateDefaultSubobject<USActionComponent>("ActionComp");
+
+	// Ensures we receive a controlled when spawned in the level by our gamemode
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
+	// Disabled on capsule to let projectiles pass through capsule and hit mesh instead
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Ignore);
+	// Enabled on mesh to react to incoming projectiles
+	GetMesh()->SetGenerateOverlapEvents(true);
+
 	TimeToHitParamName = "TimeToHit";
+	TargetActorKey = "TargetActor";
 }
 
 
@@ -53,6 +65,7 @@ void ASAICharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponen
 
 		GetMesh()->SetScalarParameterValueOnMaterials(TimeToHitParamName, GetWorld()->TimeSeconds);
 
+		// Died
 		if (NewHealth <= 0.0f)
 		{
 			// stop BT
@@ -66,6 +79,9 @@ void ASAICharacter::OnHealthChanged(AActor* InstigatorActor, USAttributeComponen
 			GetMesh()->SetAllBodiesSimulatePhysics(true);
 			GetMesh()->SetCollisionProfileName("Ragdoll");
 
+			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			GetCharacterMovement()->DisableMovement();
+
 			// set lifespan
 			SetLifeSpan(10.0f);
 		}
@@ -78,14 +94,38 @@ void ASAICharacter::SetTargetActor(AActor* NewTarget)
 	AAIController* AIC = Cast<AAIController>(GetController());
 	if (AIC)
 	{
-		AIC->GetBlackboardComponent()->SetValueAsObject("TargetActor", NewTarget);
+		AIC->GetBlackboardComponent()->SetValueAsObject(TargetActorKey, NewTarget);
 	}
+}
+
+
+AActor* ASAICharacter::GetTargetActor() const
+{
+	AAIController* AIC = Cast<AAIController>(GetController());
+	if (AIC)
+	{
+		return Cast<AActor>(AIC->GetBlackboardComponent()->GetValueAsObject(TargetActorKey));
+	}
+
+	return nullptr;
 }
 
 
 void ASAICharacter::OnPawnSeen(APawn* Pawn)
 {
-	SetTargetActor(Pawn);
+	// Ignore if target already set
+	if (GetTargetActor() != Pawn)
+	{
+		SetTargetActor(Pawn);
 
-	DrawDebugString(GetWorld(), GetActorLocation(), "PLAYER SPOTTED", nullptr, FColor::White, 0.5f, true);
+		USWorldUserWidget* NewWidget = CreateWidget<USWorldUserWidget>(GetWorld(), SpottedWidgetClass);
+		if (NewWidget)
+		{
+			NewWidget->AttachedActor = this;
+			// Index of 10 (or anything higher than default of 0) places this on top of any other widget.
+			// May end up behind the minion health bar otherwise.
+			NewWidget->AddToViewport(10);
+		}
+	}
+	//DrawDebugString(GetWorld(), GetActorLocation(), "PLAYER SPOTTED", nullptr, FColor::White, 0.5f, true);
 }

@@ -4,6 +4,10 @@
 #include "SMagicProjectile.h"
 #include "SAttributeComponent.h"
 #include "Components/SphereComponent.h"
+#include "SGameplayFunctionLibrary.h"
+#include "SActionComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
+#include "SActionEffect.h"
 
 
 ASMagicProjectile::ASMagicProjectile()
@@ -19,14 +23,26 @@ void ASMagicProjectile::OnActorOverlap(UPrimitiveComponent* OverlappedComponent,
 {
 	if (OtherActor && OtherActor != GetInstigator())
 	{
-		USAttributeComponent* AttributeComp = Cast<USAttributeComponent>(OtherActor->GetComponentByClass(USAttributeComponent::StaticClass()));
-		if (AttributeComp)
+		//static FGameplayTag Tag = FGameplayTag::RequestGameplayTag("Status.Parrying");
+
+		USActionComponent* ActionComp = Cast<USActionComponent>(OtherActor->GetComponentByClass(USActionComponent::StaticClass()));
+		if (ActionComp && ActionComp->ActiveGameplayTags.HasTag(ParryTag))
 		{
-			// minus in front of DamageAmount to apply the change as damage, not healing
-			AttributeComp->ApplyHealthChange(GetInstigator(), -DamageAmount);
-			
-			// Only explode when we hit something valid
+			MoveComp->Velocity = -MoveComp->Velocity;
+
+			SetInstigator(Cast<APawn>(OtherActor));
+			return;
+		}
+
+		// Apply Damage & Impulse
+		if (USGameplayFunctionLibrary::ApplyDirectionalDamage(GetInstigator(), OtherActor, DamageAmount, SweepResult))
+		{
 			Explode();
+
+			if (ActionComp)
+			{
+				ActionComp->AddAction(GetInstigator(), BurningActionClass);
+			}
 		}
 	}
 }
