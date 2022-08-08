@@ -20,8 +20,7 @@ void USActionComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-
-	//Server Only
+	// Server Only
 	if (GetOwner()->HasAuthority())
 	{
 		for (TSubclassOf<USAction> ActionClass : DefaultActions)
@@ -29,7 +28,6 @@ void USActionComponent::BeginPlay()
 			AddAction(GetOwner(), ActionClass);
 		}
 	}
-	
 }
 
 
@@ -40,18 +38,14 @@ void USActionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 	//FString DebugMsg = GetNameSafe(GetOwner()) + " : " + ActiveGameplayTags.ToStringSimple();
 	//GEngine->AddOnScreenDebugMessage(-1, 0.0f, FColor::White, DebugMsg);
 
-	for (USAction* Action : Actions)
-	{
-		FColor TEXTColor = Action->IsRunning() ? FColor::Blue : FColor::White;
-
-		FString ActionMsg = FString::Printf(TEXT("[%s] Actiong: %s : IsRunning: %s : Outer: %s"),
-			*GetNameSafe(GetOwner()),
-			*Action->ActionName.ToString(),
-			Action->IsRunning() ? TEXT("true") : TEXT("false"),
-			*GetNameSafe(Action->GetOuter()));
-
-		LogOnScreen(this, ActionMsg, TEXTColor, 0.0f);
-	}
+	// Draw All Actions
+// 	for (USAction* Action : Actions)
+// 	{
+// 		FColor TextColor = Action->IsRunning() ? FColor::Blue : FColor::White;
+// 		FString ActionMsg = FString::Printf(TEXT("[%s] Action: %s"), *GetNameSafe(GetOwner()), *GetNameSafe(Action));
+// 
+// 		LogOnScreen(this, ActionMsg, TextColor, 0.0f);
+// 	}
 }
 
 
@@ -62,9 +56,18 @@ void USActionComponent::AddAction(AActor* Instigator, TSubclassOf<USAction> Acti
 		return;
 	}
 
-	USAction* NewAction = NewObject<USAction>(this, ActionClass);
+	// Skip for clients
+	if (!GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Client attempting to AddAction. [Class: %s]"), *GetNameSafe(ActionClass));
+		return;
+	}
+
+	USAction* NewAction = NewObject<USAction>(GetOwner(), ActionClass);
 	if (ensure(NewAction))
 	{
+		NewAction->Initialize(this);
+
 		Actions.Add(NewAction);
 
 		if (NewAction->bAutoStart && ensure(NewAction->CanStart(Instigator)))
@@ -116,10 +119,10 @@ bool USActionComponent::StartActionByName(AActor* Instigator, FName ActionName)
 			// Is Client?
 			if (!GetOwner()->HasAuthority())
 			{
-				ServerStartAction(Instigator, ActionName); //如果是client，就在server上运行
+				ServerStartAction(Instigator, ActionName);
 			}
 
-			Action->StartAction(Instigator); //在client上再运行
+			Action->StartAction(Instigator);
 			return true;
 		}
 	}
@@ -136,6 +139,12 @@ bool USActionComponent::StopActionByName(AActor* Instigator, FName ActionName)
 		{
 			if (Action->IsRunning())
 			{
+				// Is Client?
+				if (!GetOwner()->HasAuthority())
+				{
+					ServerStopAction(Instigator, ActionName);
+				}
+
 				Action->StopAction(Instigator);
 				return true;
 			}
@@ -152,18 +161,24 @@ void USActionComponent::ServerStartAction_Implementation(AActor* Instigator, FNa
 }
 
 
+void USActionComponent::ServerStopAction_Implementation(AActor* Instigator, FName ActionName)
+{
+	StopActionByName(Instigator, ActionName);
+}
+
+
 bool USActionComponent::ReplicateSubobjects(class UActorChannel* Channel, class FOutBunch* Bunch, FReplicationFlags* RepFlags)
 {
-	bool WroteSomthing = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
+	bool WroteSomething = Super::ReplicateSubobjects(Channel, Bunch, RepFlags);
 	for (USAction* Action : Actions)
 	{
 		if (Action)
 		{
-			WroteSomthing |= Channel->ReplicateSubobject(Action, *Bunch, *RepFlags);
+			WroteSomething |= Channel->ReplicateSubobject(Action, *Bunch, *RepFlags);
 		}
 	}
 
-	return WroteSomthing;
+	return WroteSomething;
 }
 
 

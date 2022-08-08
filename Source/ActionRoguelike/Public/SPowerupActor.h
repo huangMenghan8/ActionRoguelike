@@ -19,6 +19,12 @@ class ACTIONROGUELIKE_API ASPowerupActor : public AActor, public ISGameplayInter
 
 protected:
 
+	UPROPERTY(ReplicatedUsing="OnRep_IsActive")
+	bool bIsActive;
+
+	UFUNCTION()
+	void OnRep_IsActive();
+
 	UPROPERTY(EditAnywhere, Category = "Powerup")
 	float RespawnTime;
 
@@ -40,6 +46,8 @@ protected:
 public:
 
 	void Interact_Implementation(APawn* InstigatorPawn) override;
+
+	FText GetInteractText_Implementation(APawn* InstigatorPawn);
 
 public:
 
